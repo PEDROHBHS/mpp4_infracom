@@ -4,12 +4,17 @@ import re
 
 
 def validate_ip(str):
-    return bool(re.match(r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}", str))
+    return bool(re.match(r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}", str)) or (str == "localhost")
 
 
 class MainWindow(Window):
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
+
+    def clear_txt(self):
+        self.txt_area.config(state='normal')
+        self.txt_area.delete("1.0", END)
+        self.txt_area.config(state='disabled')
 
     def create_widgets(self):
         self.txt_area = Text(self.canva, border=1, wrap='word', background='#c8a2c8', state='disabled')
@@ -18,6 +23,14 @@ class MainWindow(Window):
 
         self.send_button.bind('<Button-1>', self.send)
         self.txt_field.bind('<Return>', self.send)
+
+        self.menubar = Menu(self.window)
+        self.chat_menu = Menu(self.menubar, tearoff=0)
+
+        self.menubar.add_cascade(label='Chat', menu=self.chat_menu)
+        self.chat_menu.add_command(label='Clear', command= self.clear_txt)
+
+        self.window.config(menu=self.menubar)
 
         self.scroll = Scrollbar(self.canva, orient=VERTICAL, command=self.txt_area.yview)
         self.txt_area.config(yscrollcommand=self.scroll.set)
@@ -46,11 +59,13 @@ class GetAddr(Window):
         self.ip_entry.delete(0, END)
         self.ip_entry.config(fg='#000000')
         self.ip_entry.unbind_all('<Button-1>')
+        self.ip_entry.bind('<Key>', None)
 
     def delete_port(self, event):
         self.port_entry.delete(0, END)
         self.port_entry.config(fg='#000000')
         self.port_entry.unbind_all('<Button-1>')
+        self.port_entry.bind('<Key>', None)
 
     def create_widgets(self):
         self.label_1 = Label(self.canva, text='Ip Address')
@@ -78,8 +93,9 @@ class GetAddr(Window):
             self.ip_entry.insert(0, "Digite um endereço válido")
 
             self.ip_entry.bind('<Button-1>', self.delete_ip)
+            self.ip_entry.bind('<Key>', self.delete_ip)
             
-        elif not port.isdigit():
+        elif not port.isdigit() or int(port) > 65535:
             self.ip_entry.delete(0, END)
             self.port_entry.delete(0, END)
 
@@ -87,6 +103,7 @@ class GetAddr(Window):
             self.port_entry.insert(0, "Digite uma porta válida")
 
             self.port_entry.bind('<Button-1>', self.delete_port)
+            self.port_entry.bind('<Key>', self.delete_port)
 
         else:
             self.clear()
