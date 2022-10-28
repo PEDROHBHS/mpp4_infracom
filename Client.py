@@ -19,6 +19,7 @@ class Client:
         except:
             print("error of receive")
             self.client.close()
+            return None
 
     def send(self, message):
         try:

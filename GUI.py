@@ -3,6 +3,7 @@ from datetime import datetime
 from ServerP2P import ServerP2P
 from Client import Client
 from Window import Window
+import threading
 import re
 
 
@@ -20,6 +21,8 @@ class MainWindow(Window):
         except:
             self.server = ServerP2P(ip, int(port))
             self.serverChecker = True
+
+        threading.Thread(target=self.receive).start()
 
     def clear_txt(self):
         self.txt_area.config(state='normal')
@@ -55,40 +58,46 @@ class MainWindow(Window):
 
     def send(self, event):
         txt = self.txt_field.get()
-        if self.serverChecker:
-            dt = datetime.now()
-            date = dt.strftime("%m-%d-%Y %H:%Mh")
-            msg = f'-> {username} [{date}] : {txt}'
-            self.server.send(msg)
-        
-        else:
-            dt = datetime.now()
-            date = dt.strftime("%m-%d-%Y %H:%Mh")
-            msg = f'-> {username} [{date}] : {txt}'
-            self.client.send(msg)
 
-        if txt.strip() != '':
+        if txt.strip() == '':
+            return
+
+        def send_msg():
+            dt = datetime.now()
+            date = dt.strftime("%m-%d-%Y %H:%Mh")
+            msg = f'-> {username} [{date}] : {txt}'
+
+            if self.serverChecker:
+                self.server.send(msg)
+            else:
+                self.client.send(msg)
+
             self.txt_area.config(state='normal')
             self.txt_area.insert(END, msg + '\n')
             self.txt_area.config(state='disabled')
+            self.txt_field.delete(0, END)
 
-        if self.serverChecker:
+        threading.Thread(target=send_msg).start()
+
+    def receive(self):
+        while True:
             dt = datetime.now()
             date = dt.strftime("%m-%d-%Y %H:%Mh")
-            msg_date, msg_rcv = self.server.receive().split(' : ')
-            msg_rcv = f'{msg_date}-[{date}] : {msg_rcv}'
-        else:
-            dt = datetime.now()
-            date = dt.strftime("%m-%d-%Y %H:%Mh")
-            msg_date, msg_rcv = self.client.receive().split(' : ')
+
+            if self.serverChecker:
+                msg = self.server.receive()
+            else:
+                msg = self.client.receive()
+
+            if msg is None:
+                continue
+        
+            msg_date, msg_rcv = msg.split(' : ')
             msg_rcv = f'{msg_date}-[{date}] : {msg_rcv}'
 
-        if txt.strip() != '':
             self.txt_area.config(state='normal')
             self.txt_area.insert(END, msg_rcv + '\n')
-            self.txt_area.config(state='disabled')  
-
-        self.txt_field.delete(0, END)
+            self.txt_area.config(state='disabled')
 
 class Username(Window):
     def __init__(self, width, height, title):
@@ -100,10 +109,13 @@ class Username(Window):
         self.usernameEntry = Entry(self.canva, bd =5)
         self.usernameEntry.pack(padx=15, pady=5)
         
-        self.create_button = Button(self.canva, text='Create', command=self.send)
+        self.create_button = Button(self.canva, text='Create')
         self.create_button.pack(side = LEFT , padx = 60)
 
-    def send(self):
+        self.create_button.bind('<Button-1>', self.send)
+        self.usernameEntry.bind('<Return>', self.send)
+
+    def send(self, event):
         global username
         username = self.usernameEntry.get().strip()
         self.usernameEntry.delete(0, END)
@@ -159,7 +171,9 @@ class GetAddr(Window):
         self.port_entry = Entry(self.canva, width=85, border=1, bg='white')
         self.ip_other_entry = Entry(self.canva, width=85, border=1, bg='white')
         self.port_other_entry = Entry(self.canva, width=85, border=1, bg='white')
-        self.confirm_button = Button(self.canva, text='Confirm', padx=40, command=self.send)
+        self.confirm_button = Button(self.canva, text='Confirm', padx=40)
+        self.confirm_button.bind('<Button-1>', self.send)
+        self.confirm_button.bind('<Return>', self.send)
 
         self.label_1.grid(column=0, row=0)
         self.label_2.grid(column=0, row=1)
@@ -172,7 +186,7 @@ class GetAddr(Window):
         self.port_other_entry.grid(column=1, row=3, columnspan=4)
         self.confirm_button.grid(column=2, row=4)
 
-    def send(self):
+    def send(self, event):
         global ip
         global port
         global ip_connect

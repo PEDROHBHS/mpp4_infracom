@@ -19,6 +19,7 @@ class ServerP2P:
         except:
             print("error to receive")
             self.client.close()
+            return None
 
     def send(self, message):
         try:
