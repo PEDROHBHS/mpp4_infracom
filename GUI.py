@@ -119,17 +119,35 @@ class GetAddr(Window):
         title = f'Chat P2P de {username}'
         super().__init__(width, height, title)
 
-    def delete_ip(self, event):
-        self.ip_entry.delete(0, END)
-        self.ip_entry.config(fg='#000000')
-        self.ip_entry.unbind_all('<Button-1>')
-        self.ip_entry.bind('<Key>', None)
+    def delete_ip(self, event, ip_entry):
+        ip_entry.delete(0, END)
+        ip_entry.config(fg='#000000')
+        ip_entry.unbind('<Button-1>')
+        ip_entry.unbind('<Key>')
 
-    def delete_port(self, event):
-        self.port_entry.delete(0, END)
-        self.port_entry.config(fg='#000000')
-        self.port_entry.unbind_all('<Button-1>')
-        self.port_entry.bind('<Key>', None)
+    def delete_port(self, event, port_entry):
+        port_entry.delete(0, END)
+        port_entry.config(fg='#000000')
+        port_entry.unbind('<Button-1>')
+        port_entry.unbind('<Key>')
+
+    def invalid_ip(self, ip_entry):
+        ip_entry.delete(0, END)
+
+        ip_entry.config(fg='#ff0000')
+        ip_entry.insert(0, "Digite um endereço válido")
+
+        ip_entry.bind('<Button-1>', lambda e: self.delete_ip(event=e, ip_entry=ip_entry))
+        ip_entry.bind('<Key>', lambda e: self.delete_ip(event=e, ip_entry=ip_entry))
+
+    def invalid_port(self, port_entry):
+        port_entry.delete(0, END)
+
+        port_entry.config(fg='#ff0000')
+        port_entry.insert(0, "Digite uma porta válida")
+
+        port_entry.bind('<Button-1>', lambda e: self.delete_port(event=e, port_entry=port_entry))
+        port_entry.bind('<Key>', lambda e: self.delete_port(event=e, port_entry=port_entry))
 
     def create_widgets(self):
         self.label_1 = Label(self.canva, text='Ip Address')
@@ -160,50 +178,30 @@ class GetAddr(Window):
         global ip_connect
         global port_connect
 
+        valid = True
+
         ip = self.ip_entry.get().strip()
         port = self.port_entry.get().strip()
         ip_connect = self.ip_other_entry.get().strip()
         port_connect = self.port_other_entry.get().strip()
 
-        if not validate_ip(ip) and validate_ip(ip_connect):
-            self.ip_entry.delete(0, END)
-            self.port_entry.delete(0, END)
+        if not validate_ip(ip):
+            valid = False
+            self.invalid_ip(self.ip_entry)
 
-            self.ip_entry.config(fg='#ff0000')
-            self.ip_entry.insert(0, "Digite um endereço válido")
+        if not validate_ip(ip_connect):
+            valid = False
+            self.invalid_ip(self.ip_other_entry)
 
-            self.ip_entry.bind('<Button-1>', self.delete_ip)
-            self.ip_entry.bind('<Key>', self.delete_ip)
+        if not port.isdigit() or int(port) > 65535:
+            valid = False
+            self.invalid_port(self.port_entry)
 
-            self.ip_other_entry.delete(0, END)
-            self.port_other_entry.delete(0, END)
-            
-            self.ip_other_entry.config(fg='#ff0000')
-            self.ip_other_entry.insert(0, "Digite um endereço válido")
+        if not port_connect.isdigit() or int(port_connect) > 65535:
+            valid = False
+            self.invalid_port(self.port_other_entry)
 
-            self.ip_other_entry.bind('<Button-1>', self.delete_ip)
-            self.ip_other_entry.bind('<Key>', self.delete_ip)
-
-        elif not port.isdigit() or int(port) > 65535:
-            self.ip_entry.delete(0, END)
-            self.port_entry.delete(0, END)
-
-            self.port_entry.config(fg='#ff0000')
-            self.port_entry.insert(0, "Digite uma porta válida")
-
-            self.port_entry.bind('<Button-1>', self.delete_port)
-            self.port_entry.bind('<Key>', self.delete_port)
-
-            self.ip_other_entry.delete(0, END)
-            self.port_other_entry.delete(0, END)
-
-            self.port_other_entry.config(fg='#ff0000')
-            self.port_other_entry.insert(0, "Digite uma porta válida")
-
-            self.port_other_entry.bind('<Button-1>', self.delete_port)
-            self.port_other_entry.bind('<Key>', self.delete_port)
-
-        else:
+        if valid:
             self.clear()
             print((ip, int(port)))
             print((ip_connect, int(port_connect)))
