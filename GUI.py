@@ -15,10 +15,11 @@ class MainWindow(Window):
         super().__init__(width, height, title)
         self.serverChecker = False
         try:
-            self.client = Client(ip, int(port), (ip_connect, int(port_connect)))
+            self.client = Client(
+                ip, int(port), (ip_connect, int(port_connect)))
         except:
-            self.server = ServerP2P(ip,int(port))
-            self.serverChecker = True 
+            self.server = ServerP2P(ip, int(port))
+            self.serverChecker = True
 
     def clear_txt(self):
         self.txt_area.config(state='normal')
@@ -26,7 +27,8 @@ class MainWindow(Window):
         self.txt_area.config(state='disabled')
 
     def create_widgets(self):
-        self.txt_area = Text(self.canva, border=1, wrap='word', background='#c8a2c8', state='disabled')
+        self.txt_area = Text(self.canva, border=1, wrap='word',
+                             background='#c8a2c8', state='disabled')
         self.txt_field = Entry(self.canva, width=85, border=1, bg='white')
         self.send_button = Button(self.canva, text='Send', padx=40)
 
@@ -37,19 +39,19 @@ class MainWindow(Window):
         self.chat_menu = Menu(self.menubar, tearoff=0)
 
         self.menubar.add_cascade(label='Chat', menu=self.chat_menu)
-        self.chat_menu.add_command(label='Clear', command= self.clear_txt)
+        self.chat_menu.add_command(label='Clear', command=self.clear_txt)
 
         self.window.config(menu=self.menubar)
 
-        self.scroll = Scrollbar(self.canva, orient=VERTICAL, command=self.txt_area.yview)
+        self.scroll = Scrollbar(
+            self.canva, orient=VERTICAL, command=self.txt_area.yview)
         self.txt_area.config(yscrollcommand=self.scroll.set)
         self.scroll.grid(column=5, row=0, sticky=(N, S))
 
         self.txt_area.grid(column=0, row=0, columnspan=5)
         self.txt_field.grid(column=0, row=1, columnspan=4)
         self.send_button.grid(column=4, row=1)
-
-        
+    
 
     def send(self, event):
         txt = self.txt_field.get()
@@ -58,24 +60,34 @@ class MainWindow(Window):
             date = dt.strftime("%m-%d-%Y %H:%Mh")
             msg = f'-> {username} [{date}] : {txt}'
             self.server.send(msg)
-            msg_date, msg_rcv = self.server.receive().split(' : ')
-            msg_rcv = f'{msg_date}-[{date}] : {msg_rcv}'
+        
         else:
             dt = datetime.now()
             date = dt.strftime("%m-%d-%Y %H:%Mh")
             msg = f'-> {username} [{date}] : {txt}'
             self.client.send(msg)
-            msg_date, msg_rcv = self.client.receive().split(' : ')
-            msg_rcv = f'{msg_date}-[{date}] : {msg_rcv}'
 
         if txt.strip() != '':
             self.txt_area.config(state='normal')
             self.txt_area.insert(END, msg + '\n')
             self.txt_area.config(state='disabled')
-            if (msg_rcv):
-                self.txt_area.config(state='normal')
-                self.txt_area.insert(END, msg_rcv + '\n')
-                self.txt_area.config(state='disabled')
+
+        if self.serverChecker:
+            dt = datetime.now()
+            date = dt.strftime("%m-%d-%Y %H:%Mh")
+            msg_date, msg_rcv = self.server.receive().split(' : ')
+            msg_rcv = f'{msg_date}-[{date}] : {msg_rcv}'
+        else:
+            dt = datetime.now()
+            date = dt.strftime("%m-%d-%Y %H:%Mh")
+            msg_date, msg_rcv = self.client.receive().split(' : ')
+            msg_rcv = f'{msg_date}-[{date}] : {msg_rcv}'
+
+        if txt.strip() != '':
+            self.txt_area.config(state='normal')
+            self.txt_area.insert(END, msg_rcv + '\n')
+            self.txt_area.config(state='disabled')  
+
         self.txt_field.delete(0, END)
 
 class Username(Window):
@@ -196,7 +208,7 @@ class GetAddr(Window):
             print((ip, int(port)))
             print((ip_connect, int(port_connect)))
 
-            MainWindow(720, 540, self.title).start()       
+            MainWindow(720, 540, self.title).start()    
 
     def clear(self):
         self.canva.destroy()
