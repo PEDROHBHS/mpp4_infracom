@@ -1,5 +1,6 @@
 import socket
 from datetime import datetime
+from socketserver import UDPServer
 
 class ServerP2P:
     def __init__(self, host, port):
@@ -11,6 +12,10 @@ class ServerP2P:
 
         self.client, self.address = self.server.accept()
         print(f"connected server: {self.address[0]} {self.address[1]}")
+
+        self.udpSocket = socket.socket(family=socket.AF_INET, type=socket.SOCK_DGRAM)
+        self.udpSocket.bind(self.id)
+        print("UDP server up and listening")
 
     def receive(self):
         try:
@@ -28,3 +33,22 @@ class ServerP2P:
         except:
             print("error to send")
             self.client.close()
+
+    def udpReceive(self):
+        bufferSize = 4096
+
+        msgServer = "Hello UDP Client"
+
+        while(True):
+            addressAndMessage = self.udpSocket.recvfrom(bufferSize)
+
+            message = addressAndMessage[0]
+            address = addressAndMessage[1]
+
+            cliMsg = "Message from Client: {}".format(message)
+            cliIP = "Client IP Address:{}".format(address)
+
+            print(cliMsg)
+            print(cliIP)
+
+            self.udpSocket.sendto(msgServer.encode(), address)
