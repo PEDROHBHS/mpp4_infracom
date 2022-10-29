@@ -1,10 +1,15 @@
 from tkinter import *
 from datetime import datetime
+from ClientUDP import ClientUDP
 from ServerP2P import ServerP2P
 from Client import Client
 from Window import Window
 import threading
 import re
+from tkinter.filedialog import askopenfile
+from PIL import ImageTk, Image, ImageFile
+from ServerUDP import ServerUDP
+from ClientUDP import ClientUDP
 
 
 def validate_ip(str):
@@ -34,9 +39,11 @@ class MainWindow(Window):
                              background='#c8a2c8', state='disabled')
         self.txt_field = Entry(self.canva, width=85, border=1, bg='white')
         self.send_button = Button(self.canva, text='Send', padx=40)
+        self.media_button = Button(self.canva, text='Send media', padx=20)
 
         self.send_button.bind('<Button-1>', self.send)
         self.txt_field.bind('<Return>', self.send)
+        self.media_button.bind('<Button-1>', self.send_media)
 
         self.menubar = Menu(self.window)
         self.chat_menu = Menu(self.menubar, tearoff=0)
@@ -54,7 +61,55 @@ class MainWindow(Window):
         self.txt_area.grid(column=0, row=0, columnspan=5)
         self.txt_field.grid(column=0, row=1, columnspan=4)
         self.send_button.grid(column=4, row=1)
+        self.media_button.grid(column=4, row=2)
     
+    def send_media(self, event):
+        # ImageFile.LOAD_TRUNCATED_IMAGES = True
+        filepath = askopenfile(mode='r', filetypes=[('Image Files', '*jpg')])
+        image1 = Image.open(f"{filepath.name}")
+        image1 = image1.resize((200,200), Image.Resampling.LANCZOS)
+        test = ImageTk.PhotoImage(image1)
+        
+        
+        dt = datetime.now()
+        date = dt.strftime("%m-%d-%Y %H:%Mh")
+        msg = f'-> {username} [{date}] : '
+
+        # Position image
+        self.txt_area.config(state='normal')
+        self.txt_area.insert(END, msg)
+        self.txt_area.image_create(END, image=test)
+        self.txt_area.insert(END, '\n')
+        self.txt_area.config(state='disabled')
+
+        if self.serverChecker:
+            self.server.send('!media')
+        else:
+            self.client.send('!media')
+        self.envioUDP = ServerUDP(ip, int(port), filepath.name)
+        threading.Thread(target=self.envioUDP.send()).start()
+
+    def receive_media(self):
+        self.ClientUDP = ClientUDP((ip_connect,int(port_connect)))
+        fileName = self.ClientUDP.receive()
+        
+        image1 = Image.open(f"{fileName}")
+        image1 = image1.resize((50,50), Image.Resampling.LANCZOS)
+        test = ImageTk.PhotoImage(image1)
+        
+        dt = datetime.now()
+        date = dt.strftime("%m-%d-%Y %H:%Mh")
+        msg = f'-> {username} [{date}] : '
+
+        # Position image
+        self.txt_area.config(state='normal')
+        self.txt_area.insert(END, msg)
+        self.txt_area.image_create(END, image=test)
+        self.txt_area.insert(END, '\n')
+        self.txt_area.config(state='disabled')
+
+        self.ClientUDP = ClientUDP((ip_connect,int(port_connect)))
+        self.ClientUDP.receive1()
 
     def send(self, event):
         txt = self.txt_field.get()
@@ -90,6 +145,9 @@ class MainWindow(Window):
                 msg = self.client.receive()
 
             if msg is None:
+                continue
+            elif msg == '!media':
+                self.receive_media()
                 continue
         
             msg_date, msg_rcv = msg.split(' : ')
