@@ -6,6 +6,8 @@ from VideoPlayer import VideoPlayer
 from ServerP2P import ServerP2P
 from Client import Client
 from Window import Window
+from SenderUDP import SenderUDP
+from ReceiverUDP import ReceiverUDP
 import threading
 import re
 
@@ -32,13 +34,19 @@ class MainWindow(Window):
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
         self.serverChecker = False
+        self.const = 0
         try:
             self.client = Client(
                 ip, int(port), (ip_connect, int(port_connect)))
+            self.const = 1
         except:
             self.server = ServerP2P(ip, int(port))
             self.serverChecker = True
 
+        self.sum_port = (int(port_connect) + int(port)) % 65535
+        self.udp_receiver = ReceiverUDP(ip, self.sum_port + 3 + self.const, ip_connect, self.sum_port + 4 + self.const)
+
+        threading.Thread(target=self.udp_receiver.receive).start()
         threading.Thread(target=self.receive, daemon=True).start()
 
     def clear_txt(self):
@@ -48,6 +56,9 @@ class MainWindow(Window):
 
     def create_file(self):
         file = select_file()
+
+        self.udp_sender = SenderUDP(ip_connect, self.sum_port + 1 + self.const, ip, self.sum_port + 2 + self.const, file)
+        threading.Thread(target=self.udp_sender.send).start()
 
         if file.endswith(filetypes['Images']):
             global pack_img
