@@ -1,5 +1,8 @@
 from tkinter import *
+from tkinter.filedialog import askopenfilename
 from datetime import datetime
+from PIL import Image, ImageTk
+from VideoPlayer import VideoPlayer
 from ServerP2P import ServerP2P
 from Client import Client
 from Window import Window
@@ -10,6 +13,20 @@ import re
 def validate_ip(str):
     return bool(re.match(r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}", str)) or (str == "localhost")
 
+filetypes = {
+    'Images': ('.png', '.gif', '.jpg', '.jpeg'),
+    'Videos': ('.mp4', '.avi', '.mkv'),
+    'Audios': ('.mp3',)
+}
+
+filetype_list = [(t, f'*{e}') for t in filetypes.keys() for e in filetypes[t]]
+
+def select_file():
+    return askopenfilename(
+        title='Choose a file',
+        initialdir='/',
+        filetypes=filetype_list
+        )
 
 class MainWindow(Window):
     def __init__(self, width, height, title):
@@ -22,18 +39,37 @@ class MainWindow(Window):
             self.server = ServerP2P(ip, int(port))
             self.serverChecker = True
 
-        threading.Thread(target=self.receive).start()
+        threading.Thread(target=self.receive, daemon=True).start()
 
     def clear_txt(self):
         self.txt_area.config(state='normal')
         self.txt_area.delete("1.0", END)
         self.txt_area.config(state='disabled')
 
+    def create_file(self):
+        file = select_file()
+
+        if file.endswith(filetypes['Images']):
+            global pack_img
+
+            img = Image.open(file).resize((200, 200))
+            pack_img = ImageTk.PhotoImage(img)
+            self.txt_area.image_create(END, image=pack_img)
+
+        elif file.endswith(filetypes['Videos']):
+            VideoPlayer(self.txt_area, file)
+
+        self.txt_area.config(state='normal')
+        self.txt_area.insert(END, '\n')
+        self.txt_area.config(state='disabled')
+        
+
     def create_widgets(self):
         self.txt_area = Text(self.canva, border=1, wrap='word',
                              background='#c8a2c8', state='disabled')
         self.txt_field = Entry(self.canva, width=85, border=1, bg='white')
-        self.send_button = Button(self.canva, text='Send', padx=40)
+        self.send_button = Button(self.canva, text='Enviar', padx=40)
+        self.archive_button = Button(self.canva, text='Anexar', padx=40, command=self.create_file)
 
         self.send_button.bind('<Button-1>', self.send)
         self.txt_field.bind('<Return>', self.send)
@@ -51,9 +87,10 @@ class MainWindow(Window):
         self.txt_area.config(yscrollcommand=self.scroll.set)
         self.scroll.grid(column=5, row=0, sticky=(N, S))
 
-        self.txt_area.grid(column=0, row=0, columnspan=5)
-        self.txt_field.grid(column=0, row=1, columnspan=4)
+        self.txt_area.grid(column=0, row=0, columnspan=6)
+        self.txt_field.grid(column=0, row=1, columnspan=3)
         self.send_button.grid(column=4, row=1)
+        self.archive_button.grid(column=3, row=1)
     
 
     def send(self, event):
@@ -90,7 +127,7 @@ class MainWindow(Window):
                 msg = self.client.receive()
 
             if msg is None:
-                continue
+                break
         
             msg_date, msg_rcv = msg.split(' : ')
             msg_rcv = f'{msg_date}-[{date}] : {msg_rcv}'
