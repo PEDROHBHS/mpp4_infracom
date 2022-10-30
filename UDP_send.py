@@ -4,7 +4,7 @@ import os
 
 UDP_IP = "127.0.0.1"
 UDP_PORT = 5005
-buf = 1024
+buf = 10*2**10
 
 
 def send(file_name):
