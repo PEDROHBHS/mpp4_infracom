@@ -7,6 +7,8 @@ from VideoPlayer import VideoPlayer
 from ServerP2P import ServerP2P
 from Client import Client
 from Window import Window
+import UDP_rec
+import UDP_send
 import threading
 import re
 
@@ -40,6 +42,7 @@ class MainWindow(Window):
             self.server = ServerP2P(ip, int(port))
             self.serverChecker = True
 
+        threading.Thread(target=UDP_rec.start).start()
         threading.Thread(target=self.receive, daemon=True).start()
 
     def clear_txt(self):
@@ -49,6 +52,8 @@ class MainWindow(Window):
 
     def create_file(self):
         file = select_file()
+
+        threading.Thread(target=lambda: UDP_send.send(file)).start()
 
         if file.endswith(filetypes['Images']):
             global pack_img
