@@ -2,12 +2,13 @@ import socket
 import time
 import os
 
-UDP_IP = "127.0.0.1"
-UDP_PORT = 5005
-buf = 10*2**10
+
+buf = 2**12
 
 
-def send(file_name):
+def send(file_name, ip, port):
+    UDP_IP = ip
+    UDP_PORT = port
     file_name_ = os.path.basename(file_name)
 
 

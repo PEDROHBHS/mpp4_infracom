@@ -1,12 +1,15 @@
 import socket
 import select
+from GUI import MainWindow
 
-UDP_IP = "127.0.0.1"
-IN_PORT = 5005
+
 timeout = 3
-buf = 10*2**10
+buf = 2**12
 
-def start():
+def start(window : MainWindow, ip, port):
+    UDP_IP = ip
+    IN_PORT = port
+
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.bind((UDP_IP, IN_PORT))
 
@@ -26,4 +29,5 @@ def start():
             else:
                 print ("%s Finish!" % file_name)
                 f.close()
+                window.create_file(file_name.decode())
                 break
