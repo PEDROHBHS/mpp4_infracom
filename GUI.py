@@ -6,6 +6,8 @@ from VideoPlayer import VideoPlayer
 from ServerP2P import ServerP2P
 from Client import Client
 from Window import Window
+import UDP_serv
+import UDP_cli
 import threading
 import re
 
@@ -58,6 +60,7 @@ class MainWindow(Window):
 
         elif file.endswith(filetypes['Videos']):
             VideoPlayer(self.txt_area, file)
+            UDP_serv.send_video()
 
         self.txt_area.config(state='normal')
         self.txt_area.insert(END, '\n')
