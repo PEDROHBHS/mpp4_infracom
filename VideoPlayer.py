@@ -1,5 +1,4 @@
 from tkinter import*
-from tkinter.filedialog import askopenfilename
 from tkVideoPlayer import TkinterVideo
 
 
