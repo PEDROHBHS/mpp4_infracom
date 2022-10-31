@@ -279,7 +279,7 @@ class GetAddr(Window):
             print((ip, int(port)))
             print((ip_connect, int(port_connect)))
 
-            MainWindow(720, 540, self.title).start()    
+            MainWindow(1000, 540, self.title).start()    
 
     def clear(self):
         self.canva.destroy()
