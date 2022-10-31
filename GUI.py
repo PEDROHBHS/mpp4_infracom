@@ -79,7 +79,7 @@ class MainWindow(Window):
         self.txt_area.config(state='disabled')
 
         self.send(None, '')
-        threading.Thread(target=lambda: UDP_send.send(file, ip, 5006 - int(self.serverChecker))).start()
+        threading.Thread(target=lambda: UDP_send.send(file, ip, 5006 - int(self.serverChecker), ip, 5007 + int(self.serverChecker))).start()
 
         self.create_file(file)
 
