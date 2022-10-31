@@ -19,7 +19,6 @@ def send(file_name, ip, port, self_ip, self_port):
     sock.settimeout(1.0)
 
     pkt = cria_pacote_cliente(self_port, UDP_PORT, 65 + len(file_name_), seq, file_name_)
-    print(pkt)
 
     while True:
         sock.sendto(pkt, (UDP_IP, UDP_PORT))
