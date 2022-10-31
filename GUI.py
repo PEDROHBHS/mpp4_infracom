@@ -110,6 +110,8 @@ class MainWindow(Window):
         self.txt_field.grid(column=0, row=1, columnspan=3)
         self.send_button.grid(column=4, row=1)
         self.archive_button.grid(column=3, row=1)
+
+        self.txt_area.tag_config('failed', foreground="red")
     
 
     def send(self, event, txt=None):
@@ -125,13 +127,18 @@ class MainWindow(Window):
             msg = f'-> {username} [{date}] : {txt}'
 
             if self.serverChecker:
-                self.server.send(msg)
+                try_send = self.server.send(msg)
             else:
-                self.client.send(msg)
+                try_send = self.client.send(msg)
 
             if event is not None:
                 self.txt_area.config(state='normal')
-                self.txt_area.insert(END, msg + '\n')
+                
+                if try_send == -1:
+                    self.txt_area.insert(END, msg + '\n', 'failed')
+                else:
+                    self.txt_area.insert(END, msg + '\n')
+
                 self.txt_area.config(state='disabled')
                 self.txt_field.delete(0, END)
 
