@@ -25,6 +25,8 @@ class ServerP2P:
         try:
             self.client.send(message.encode())
             print(f"enviado : {message}")
+            return 0
         except:
             print("error to send")
             self.client.close()
+            return -1

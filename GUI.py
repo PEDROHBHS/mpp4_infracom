@@ -13,6 +13,8 @@ import threading
 import re
 
 
+pack_img = list()
+
 def validate_ip(str):
     return bool(re.match(r"[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}", str)) or (str == "localhost")
 
@@ -42,7 +44,7 @@ class MainWindow(Window):
             self.server = ServerP2P(ip, int(port))
             self.serverChecker = True
 
-        threading.Thread(target=UDP_rec.start).start()
+        threading.Thread(target=lambda: UDP_rec.start(self, ip, 5005 + int(self.serverChecker)), daemon=True).start()
         threading.Thread(target=self.receive, daemon=True).start()
 
     def clear_txt(self):
@@ -50,17 +52,13 @@ class MainWindow(Window):
         self.txt_area.delete("1.0", END)
         self.txt_area.config(state='disabled')
 
-    def create_file(self):
-        file = select_file()
-
-        threading.Thread(target=lambda: UDP_send.send(file)).start()
-
+    def create_file(self, file : str):
         if file.endswith(filetypes['Images']):
             global pack_img
 
             img = Image.open(file).resize((200, 200))
-            pack_img = ImageTk.PhotoImage(img)
-            self.txt_area.image_create(END, image=pack_img)
+            pack_img.append(ImageTk.PhotoImage(img))
+            self.txt_area.image_create(END, image=pack_img[-1])
 
         elif file.endswith(filetypes['Videos']):
             VideoPlayer(self.txt_area, file)
@@ -71,14 +69,26 @@ class MainWindow(Window):
         self.txt_area.config(state='normal')
         self.txt_area.insert(END, '\n')
         self.txt_area.config(state='disabled')
-        
+
+    def send_file(self, file : str):
+        dt = datetime.now()
+        date = dt.strftime("%m-%d-%Y %H:%Mh")
+        msg = f'-> {username} [{date}] :'
+        self.txt_area.config(state='normal')
+        self.txt_area.insert(END, msg + '\n')
+        self.txt_area.config(state='disabled')
+
+        self.send(None, '')
+        threading.Thread(target=lambda: UDP_send.send(file, ip, 5006 - int(self.serverChecker), ip, 5007 + int(self.serverChecker))).start()
+
+        self.create_file(file)
 
     def create_widgets(self):
         self.txt_area = Text(self.canva, border=1, wrap='word',
                              background='#c8a2c8', state='disabled')
         self.txt_field = Entry(self.canva, width=85, border=1, bg='white')
         self.send_button = Button(self.canva, text='Enviar', padx=40)
-        self.archive_button = Button(self.canva, text='Anexar', padx=40, command=self.create_file)
+        self.archive_button = Button(self.canva, text='Anexar', padx=40, command=lambda: self.send_file(select_file()))
 
         self.send_button.bind('<Button-1>', self.send)
         self.txt_field.bind('<Return>', self.send)
@@ -96,17 +106,20 @@ class MainWindow(Window):
         self.txt_area.config(yscrollcommand=self.scroll.set)
         self.scroll.grid(column=5, row=0, sticky=(N, S))
 
-        self.txt_area.grid(column=0, row=0, columnspan=6)
+        self.txt_area.grid(column=0, row=0, columnspan=8)
         self.txt_field.grid(column=0, row=1, columnspan=3)
         self.send_button.grid(column=4, row=1)
         self.archive_button.grid(column=3, row=1)
+
+        self.txt_area.tag_config('failed', foreground="red")
     
 
-    def send(self, event):
-        txt = self.txt_field.get()
+    def send(self, event, txt=None):
+        if txt is None:
+            txt = self.txt_field.get()
 
-        if txt.strip() == '':
-            return
+            if txt.strip() == '':
+                return
 
         def send_msg():
             dt = datetime.now()
@@ -114,16 +127,23 @@ class MainWindow(Window):
             msg = f'-> {username} [{date}] : {txt}'
 
             if self.serverChecker:
-                self.server.send(msg)
+                try_send = self.server.send(msg)
             else:
-                self.client.send(msg)
+                try_send = self.client.send(msg)
 
-            self.txt_area.config(state='normal')
-            self.txt_area.insert(END, msg + '\n')
-            self.txt_area.config(state='disabled')
-            self.txt_field.delete(0, END)
+            if event is not None:
+                self.txt_area.config(state='normal')
+                
+                if try_send == -1:
+                    self.txt_area.insert(END, msg + '\n', 'failed')
+                else:
+                    self.txt_area.insert(END, msg + '\n')
+
+                self.txt_area.config(state='disabled')
+                self.txt_field.delete(0, END)
 
         threading.Thread(target=send_msg).start()
+            
 
     def receive(self):
         while True:
